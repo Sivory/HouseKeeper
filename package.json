@@ -1,0 +1,12 @@
+{
+  "name": "aether-housekeeper",
+  "version": "1.0.0",
+  "description": "AETHER 智能家居纯前端控制台本地静态服务器",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

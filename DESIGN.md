@@ -80,27 +80,47 @@
 - **弹性比例锁定**：以 iPad 横屏基准高度 `960px` 为参考，根据真实可视区域（读取 `visualViewport` 精确扣除 Safari 顶部地址栏高度）将逻辑宽高比弹性夹紧在 `1.28 ~ 1.66` 之间，再重新计算参数化七巧板坐标，实现 iPad Mini、iPad Air、iPad Pro 及 Safari 带顶栏模式下的布局一致性。
 - **绝对居中缩放**：舞台采用 `position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(s)`，彻底避免小屏设备（如 iPad Mini）在 Grid 居中下因布局盒溢出导致的偏移与裁切。
 
-### 3.5 移动端低温性能优化（iOS 专项）
+### 3.5 移动端极致性能优化（面向 iPad mini 4 / iOS 15 / A8 GPU）
 
-- **消除高耗能实时模糊**：彻底移除 13 块卡片上的 `backdrop-filter: blur(...)` 与外层 `filter: drop-shadow(...)`，以高质感实体陶瓷渐变与纯几何 3D 挤出块替代，避免 iOS WebKit 每帧重采样毛玻璃导致发热。
-- **WebGL 降采样与动态限帧**：WebGL 柔和背景色块以 `0.7x` 分辨率渲染并去除逐像素噪声计算；静态巡航自动限帧至约 `26fps`，仅在触发触控波纹或转场扫光时瞬时提升至 `60fps`。
-- **后台自动休眠**：监听 `document.visibilitychange`，页面切至后台或锁屏时自动停止 `requestAnimationFrame` 渲染循环。
+- **全量 WebGL 2.0 无业务 DOM**：整页仅保留一个全屏 `<canvas>`，彻底消除场景切换时多块 `clip-path` DOM 的重排、重绘与合成瓶颈。
+- **每帧恒定 2 次 DrawCall**：
+  - **Pass 1（合并几何 VBO）**：背景渐变、漂移斜切色块、建筑平行斜线、全部七巧板 3D 挤出底座、145° 顶点色陶瓷渐变表面、局部呼吸微光、带状三角面发丝描边、唯一同心三角核心、扩散波纹与转场扫光全部合批，1 次 `gl.drawArrays` 完成。
+  - **Pass 2（共享纯白文字图集 VBO）**：离屏 1024×1024 Canvas 预烘焙纯白字形，上传为单张预乘纹理；运行期零 Canvas 重绘，文字颜色与透明度全部由片元着色器 `mask * v_color` 实时着色，1 次 `gl.drawArrays` 完成。
+- **低 Overdraw 与动态限帧**：去掉全屏片元 SDF 改用几何面片；非当前视图透明度归零后直接跳过顶点写入；静态巡航自动降至 ~30fps，触控/转场/场景切换瞬时恢复 60fps；切后台自动停止渲染。
+- **精确多边形触控碰撞**：基于射线法（Ray Casting）直接对渲染用同一套多边形顶点做命中判定，按 `zIndex` 降序遍历支持嵌套按钮（如电器板块内的「精调 ▸」子按钮优先拦截）与滑块连续拖动捕获。
 
 ---
 
-## 4. 代码结构
+## 4. 代码结构（配置 / 领域 / 引擎 / 视图四层分离）
 
 ### 4.1 目录与文件清单
 
 ```text
 HouseKeeper/
-├── index.html      # 视口锁定容器、一级七巧板画布及两个二级菜单语义结构
-├── styles.css      # 4 套场景主题变量、3D 多边形挤出与按压动效、二级转场样式
-├── webgl-bg.js     # WebGL 斜切色块着色器 + Canvas 2D 斜线/波纹/扫光引擎
-├── app.js          # iPad 弹性缩放、参数化七巧板几何生成、状态机与触屏交互逻辑
-├── server.js       # Node + Express 本地静态服务器（0.0.0.0:3000，局域网可访问）
-├── package.json    # 项目元信息与 Express 依赖声明
-└── DESIGN.md       # 本文档
+├── index.html                  # 极简入口，仅承载全屏 <canvas>
+├── src/
+│   ├── config/
+│   │   ├── home.config.js      # 场景、设备、控件规格、预设、定时与宏的声明式配置
+│   │   └── layout.config.js    # 舞台参数、斜线参考线与七巧板拓扑配置（无硬编码坐标）
+│   ├── core/
+│   │   ├── geometry.js         # 声明式布局求值器与多边形数学工具
+│   │   └── store.js            # HomeStore 纯业务状态机与事件订阅（零渲染依赖）
+│   ├── engine/
+│   │   ├── theme.js            # 4 套场景 RGBA 调色板与零 GC 原地插值
+│   │   ├── font-atlas.js       # 1024x1024 纯白共享文字纹理图集烘焙器与排版器
+│   │   ├── gl-renderer.js      # WebGL 2.0 批处理引擎（几何 VBO + 文字 VBO = 2 DrawCall）
+│   │   └── input.js            # 纯触控射线法多边形碰撞（嵌套按钮与滑块捕获）
+│   ├── ui/
+│   │   ├── primitives.js       # 3D 挤出板块、同心三角核心、进度条、触屏滑块等绘制原语
+│   │   ├── background-layer.js # 背景斜切色块、平行斜线、波纹与扫光层
+│   │   └── views/
+│   │       ├── hub-view.js        # 一级七巧板总览视图
+│   │       ├── inspector-view.js  # 二级精细调参视图
+│   │       └── automation-view.js # 二级安防与定时视图
+│   └── main.js                 # 装配入口、动态限帧主循环与左上角 FPS/DC 调试 HUD
+├── server.js                   # Node + Express 本地静态服务器（0.0.0.0:3000，局域网可访问）
+├── package.json                # 项目元信息与 Express 依赖声明
+└── DESIGN.md                   # 本文档
 ```
 
 ### 4.2 模块协作关系

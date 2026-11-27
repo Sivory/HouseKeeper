@@ -40,17 +40,34 @@ npm start
 
 ---
 
-## 项目结构
+## 项目结构（纯 WebGL 2.0 分层架构）
 
 ```text
 HouseKeeper/
-├── index.html      # 非滚动等比舞台与一级/二级菜单结构
-├── styles.css      # 4 套场景配色、七巧板 3D 挤出与转场动画样式
-├── webgl-bg.js     # WebGL 斜切色块着色器与 Canvas 2D 建筑斜线引擎
-├── app.js          # iPad 弹性缩放、参数化七巧板生成、状态机与交互逻辑
-├── server.js       # Node + Express 局域网本地静态服务器
-├── package.json    # 项目配置与依赖
-└── DESIGN.md       # 完整设计要点与架构文档
+├── index.html                  # 极简入口，仅承载全屏 <canvas>
+├── src/
+│   ├── config/
+│   │   ├── home.config.js      # 场景、设备、滑块规格、预设、定时与宏声明式配置
+│   │   └── layout.config.js    # 舞台比例、斜线锚点与七巧板拓扑声明式配置
+│   ├── core/
+│   │   ├── geometry.js         # 声明式拓扑求值器与多边形数学工具
+│   │   └── store.js            # HomeStore 纯业务状态机、事件发布与持久化
+│   ├── engine/
+│   │   ├── theme.js            # 4 套场景 RGBA 浮点调色板与零 GC 插值
+│   │   ├── font-atlas.js       # 1024x1024 纯白共享文字纹理图集（着色器染色）
+│   │   ├── gl-renderer.js      # WebGL 2.0 批处理引擎（整帧恒定 2 次 DrawCall）
+│   │   └── input.js            # 纯触控射线法多边形碰撞（嵌套按钮与滑块捕获）
+│   ├── ui/
+│   │   ├── primitives.js       # 3D 板块、同心三角核心、进度条、滑块等绘制原语
+│   │   ├── background-layer.js # 背景斜切色块、平行斜线、波纹与扫光图层
+│   │   └── views/
+│   │       ├── hub-view.js        # 一级七巧板总览视图
+│   │       ├── inspector-view.js  # 二级精细调参视图
+│   │       └── automation-view.js # 二级安防与定时视图
+│   └── main.js                 # 装配入口、动态限帧主循环与左上角调试 HUD
+├── server.js                   # Node + Express 局域网本地静态服务器
+├── package.json                # 项目配置与依赖
+└── DESIGN.md                   # 完整设计要点与架构文档
 ```
 
 更详细的设计规范与后续对接 Home Assistant / MQTT 指南请参阅 [DESIGN.md](./DESIGN.md)。

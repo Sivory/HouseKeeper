@@ -6,144 +6,36 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="format-detection" content="telephone=no" />
-  <title>AETHER · 极简智能家居中控</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <title>AETHER · WebGL 2.0 智能家居中控</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      width: 100dvw;
+      height: 100dvh;
+      overflow: hidden;
+      overscroll-behavior: none;
+      background: #eef1f5;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    #app-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+    }
+  </style>
 </head>
-<body data-scene="bright" data-view="hub">
-  <!-- 全屏铺满的极简背景动画层：WebGL 白灰斜切色块 + 极细建筑线条 -->
-  <div class="bg-stage" aria-hidden="true">
-    <canvas id="webgl-bg"></canvas>
-    <canvas id="lines-bg"></canvas>
-  </div>
-
-  <!-- 严格非滚动视口：内部 1600x900 基准舞台跨分辨率等比锁定 -->
-  <div class="viewport-lock">
-    <div class="touch-stage" id="touch-stage">
-      <!-- ================================================================
-           一级主视图：七巧板大斜线相交拼合中控台（无传统行列网格）
-           ================================================================ -->
-      <section class="stage-view view-hub is-current" id="view-hub" aria-label="主控总览">
-        <!-- 由 app.js 根据精确斜率坐标生成所有七巧板 3D 板块 -->
-        <div class="tangram-canvas" id="tangram-canvas"></div>
-      </section>
-
-      <!-- ================================================================
-           二级视图 A：触屏精细调参（大斜线两分构图）
-           ================================================================ -->
-      <section class="stage-view view-sub view-inspector" id="view-inspector" aria-label="精细调参" aria-hidden="true">
-        <div class="sub-header">
-          <button class="slash-back-btn" data-back-hub type="button">
-            <span class="back-arrow">◁</span>
-            <span>返回</span>
-          </button>
-          <div class="sub-switcher" id="insp-switcher">
-            <!-- 动态生成设备切换斜切胶囊 -->
-          </div>
-        </div>
-
-        <div class="sub-tangram insp-tangram">
-          <!-- 左斜切大块：极简状态读数与开关 -->
-          <div class="slash-panel insp-left-panel">
-            <div class="panel-extrude" aria-hidden="true"></div>
-            <div class="panel-body">
-              <div class="insp-meta-top">
-                <span class="min-kicker" id="insp-room-label">客厅</span>
-                <h2 id="insp-device-name">客厅主灯</h2>
-              </div>
-
-              <div class="insp-hero-readout">
-                <strong id="insp-big-value">92%</strong>
-                <span id="insp-sub-value">5200K · 38W</span>
-              </div>
-
-              <button class="touch-toggle-slab is-on" id="insp-power-btn" type="button" aria-pressed="true">
-                <span id="insp-power-label">已开启</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 右斜切大块：超大触屏滑块与快捷档位 -->
-          <div class="slash-panel insp-right-panel">
-            <div class="panel-extrude" aria-hidden="true"></div>
-            <div class="panel-body">
-              <div class="touch-sliders-area" id="insp-sliders">
-                <!-- 动态渲染宽大触屏滑块 -->
-              </div>
-              <div class="touch-presets-bar" id="insp-presets">
-                <!-- 动态渲染 4 档快速预设 -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ================================================================
-           二级视图 B：安防与睡眠定时（大斜线三分构图）
-           ================================================================ -->
-      <section class="stage-view view-sub view-automation" id="view-automation" aria-label="安防与定时" aria-hidden="true">
-        <div class="sub-header">
-          <button class="slash-back-btn" data-back-hub type="button">
-            <span class="back-arrow">◁</span>
-            <span>返回</span>
-          </button>
-          <span class="sub-title-label">安防与定时联动</span>
-        </div>
-
-        <div class="sub-tangram auto-tangram">
-          <!-- 左侧大块：离家安防警戒 -->
-          <div class="slash-panel auto-sec-panel">
-            <div class="panel-extrude" aria-hidden="true"></div>
-            <div class="panel-body">
-              <span class="min-kicker">全屋安防</span>
-              <div class="sec-hero">
-                <strong id="sec-state-title">居家态</strong>
-                <p id="sec-state-desc">门窗传感待命，点击下方即可切换离家警戒</p>
-              </div>
-              <button class="touch-toggle-slab" id="btn-security-toggle" type="button" aria-pressed="false">
-                <span id="sec-btn-text">开启离家警戒</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 右侧上下两块：睡眠定时 + 全屋快捷同步 -->
-          <div class="auto-right-stack">
-            <div class="slash-panel auto-timer-panel">
-              <div class="panel-extrude" aria-hidden="true"></div>
-              <div class="panel-body">
-                <div class="timer-top-row">
-                  <span class="min-kicker">睡眠倒计时熄灯</span>
-                  <strong class="timer-status" id="sleep-timer-readout">未设定</strong>
-                </div>
-                <div class="timer-touch-row">
-                  <button class="slash-choice-btn" data-minutes="15" type="button">15 分钟</button>
-                  <button class="slash-choice-btn" data-minutes="30" type="button">30 分钟</button>
-                  <button class="slash-choice-btn" data-minutes="60" type="button">60 分钟</button>
-                  <button class="slash-choice-btn is-muted" data-minutes="0" type="button">取消</button>
-                </div>
-              </div>
-            </div>
-
-            <div class="slash-panel auto-macro-panel">
-              <div class="panel-extrude" aria-hidden="true"></div>
-              <div class="panel-body">
-                <span class="min-kicker">全屋一键同步</span>
-                <div class="macro-touch-row">
-                  <button class="slash-choice-btn" id="macro-all-lights-on" type="button">全屋照明全开</button>
-                  <button class="slash-choice-btn" id="macro-curtains-toggle" type="button">窗帘一键闭合</button>
-                  <button class="slash-choice-btn" id="macro-away-mode" type="button">离家节能布防</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </div>
-  </div>
-
-  <!-- 极简底部轻提示 -->
-  <div class="toast-container" id="toast-container" aria-live="polite"></div>
-
-  <script src="./webgl-bg.js"></script>
-  <script src="./app.js"></script>
+<body>
+  <!-- 全页面唯一画布：无业务 DOM，全量 WebGL 2.0 批处理渲染 -->
+  <canvas id="app-canvas"></canvas>
+  <script type="module" src="./src/main.js"></script>
 </body>
 </html>

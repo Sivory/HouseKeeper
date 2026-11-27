@@ -25,9 +25,9 @@
 
 ## 快速开始
 
-### 方式一：直接打开
+### 方式一：在线预览（GitHub Pages）
 
-项目为纯前端零构建设计，直接用现代浏览器打开 [index.html](./index.html) 即可体验。
+直接访问在线部署地址即可在浏览器或 iPad 上体验：**https://sivory.github.io/HouseKeeper/**
 
 ### 方式二：启动本地静态服务器（支持手机 / iPad 局域网访问）
 
